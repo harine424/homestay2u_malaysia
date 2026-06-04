@@ -19,13 +19,12 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
   final ScrollController _scrollController = ScrollController();
 
   List<Homestay> _homestays = [];
-  List<String> _states = [];
   List<String> _searchHistory = [];
 
   bool _isLoading = true;
   String _errorMessage = "";
 
-  String? _selectedState;
+  String _filterState = "";
   String _filterDistrict = "";
   int _limit = 20;
 
@@ -33,9 +32,9 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
   void initState() {
     super.initState();
     _loadSearchHistory();
-    _fetchStates();
-    _fetchHomestays();
+    _fetchHomestays(); // Load default list
 
+    // Trigger pagination when scrolling to the bottom
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
           _scrollController.position.maxScrollExtent) {
@@ -74,29 +73,6 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
     }
   }
 
-  Future<void> _fetchStates() async {
-    try {
-      final response = await http.get(
-        Uri.parse("http://slum78.myddns.me/homestay2u/api/states"),
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        List dynamicList = [];
-
-        // Safely parse states just like we parse homestays
-        if (data is List) {
-          dynamicList = data;
-        } else if (data is Map) {
-          dynamicList = data['data'] ?? data['states'] ?? [];
-        }
-
-        setState(() {
-          _states = dynamicList.map((e) => e.toString()).toList();
-        });
-      }
-    } catch (_) {}
-  }
-
   Future<void> _fetchHomestays([String keyword = ""]) async {
     setState(() {
       _isLoading = true;
@@ -105,14 +81,25 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
 
     try {
       var uri = Uri.parse("http://slum78.myddns.me/homestay2u/api/homestays");
-      Map<String, String> params = {'limit': _limit.toString()};
+      Map<String, String> params = {};
 
-      if (keyword.isNotEmpty) params['search'] = keyword;
-      if (_selectedState != null && _selectedState!.isNotEmpty)
-        params['state'] = _selectedState!;
-      if (_filterDistrict.isNotEmpty) params['district'] = _filterDistrict;
+      // Build API Parameters
+      if (keyword.isNotEmpty) {
+        params['search'] = keyword;
+      } else {
+        if (_filterState.isNotEmpty) {
+          params['state'] = _filterState;
+        }
+        if (_filterDistrict.isNotEmpty) {
+          params['district'] = _filterDistrict;
+        }
+      }
 
-      uri = uri.replace(queryParameters: params);
+      params['limit'] = _limit.toString();
+
+      if (params.isNotEmpty) {
+        uri = uri.replace(queryParameters: params);
+      }
 
       final response = await http.get(uri);
 
@@ -157,8 +144,8 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
   void _onSearch() {
     FocusScope.of(context).unfocus();
 
-    // Clear filters when executing a direct search to prevent API conflict
-    _selectedState = null;
+    // Clear filters when running a direct search
+    _filterState = "";
     _filterDistrict = "";
     _limit = 20;
 
@@ -168,71 +155,60 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
   }
 
   void _showFilterDialog() {
+    TextEditingController stateController = TextEditingController(
+      text: _filterState,
+    );
     TextEditingController districtController = TextEditingController(
       text: _filterDistrict,
     );
+
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("Filter Homestays"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<String>(
-                    value: _selectedState,
-                    decoration: const InputDecoration(labelText: "State"),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text("All States"),
-                      ),
-                      ..._states.map(
-                        (state) =>
-                            DropdownMenuItem(value: state, child: Text(state)),
-                      ),
-                    ],
-                    onChanged: (val) =>
-                        setDialogState(() => _selectedState = val),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: districtController,
-                    decoration: const InputDecoration(
-                      labelText: "District (e.g. Pontian)",
-                    ),
-                  ),
-                ],
+        return AlertDialog(
+          title: const Text("Filter Homestays"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: stateController,
+                decoration: const InputDecoration(
+                  labelText: "State (e.g. Sabah, Johor)",
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    // Reset variables, close dialog, and reload fresh data
-                    _selectedState = null;
-                    _filterDistrict = "";
-                    _limit = 20;
-                    _searchController.clear();
-                    Navigator.pop(context);
-                    _fetchHomestays();
-                  },
-                  child: const Text("Clear"),
+              const SizedBox(height: 16),
+              TextField(
+                controller: districtController,
+                decoration: const InputDecoration(
+                  labelText: "District (e.g. Pontian)",
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    // Apply filters, clear search text, close dialog, and reload
-                    _filterDistrict = districtController.text.trim();
-                    _limit = 20;
-                    _searchController.clear();
-                    Navigator.pop(context);
-                    _fetchHomestays();
-                  },
-                  child: const Text("Apply"),
-                ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _filterState = "";
+                _filterDistrict = "";
+                _limit = 20;
+                _searchController.clear();
+                Navigator.pop(context);
+                _fetchHomestays();
+              },
+              child: const Text("Clear"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _filterState = stateController.text.trim();
+                _filterDistrict = districtController.text.trim();
+                _limit = 20;
+                _searchController.clear();
+                Navigator.pop(context);
+                _fetchHomestays();
+              },
+              child: const Text("Apply"),
+            ),
+          ],
         );
       },
     );

@@ -18,15 +18,21 @@ class Homestay {
   });
 
   factory Homestay.fromJson(Map<String, dynamic> json) {
+    // Looking specifically for the 'price_min' column from your lecturer's database
+    var rawPrice = json["price_min"] ?? json["price"] ?? "0";
+
+    // Clean it up just in case there are letters
+    var cleanPrice = rawPrice.toString().replaceAll(RegExp(r'[^0-9\.]'), '');
+
     return Homestay(
       id: (json["id"] ?? "").toString(),
       name: (json["name"] ?? "No Name").toString(),
       state: (json["state"] ?? "Unknown State").toString(),
       district: (json["district"] ?? "Unknown District").toString(),
-      price: double.tryParse(json["price"].toString()) ?? 0.0,
+      price: double.tryParse(cleanPrice) ?? 0.0,
       description: (json["description"] ?? "No description available.")
           .toString(),
-      imageUrl: (json["image"] ?? json["image_url"] ?? "").toString(),
+      imageUrl: (json["image_url"] ?? json["image"] ?? "").toString(),
     );
   }
 }
