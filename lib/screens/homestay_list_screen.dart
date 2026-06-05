@@ -252,7 +252,7 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
                 ElevatedButton(
                   onPressed: _onSearch,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A),
+                    backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       vertical: 16,
