@@ -48,7 +48,7 @@ class HomestayCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E3A8A),
+                      color: Color(0xFF2E7D32),
                     ),
                   ),
                   const SizedBox(height: 8),
