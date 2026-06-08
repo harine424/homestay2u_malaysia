@@ -18,10 +18,7 @@ class Homestay {
   });
 
   factory Homestay.fromJson(Map<String, dynamic> json) {
-    // Looking specifically for the 'price_min' column from your lecturer's database
     var rawPrice = json["price_min"] ?? json["price"] ?? "0";
-
-    // Clean it up just in case there are letters
     var cleanPrice = rawPrice.toString().replaceAll(RegExp(r'[^0-9\.]'), '');
 
     return Homestay(

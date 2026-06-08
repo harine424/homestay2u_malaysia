@@ -83,7 +83,6 @@ class _HomestayListScreenState extends State<HomestayListScreen> {
       var uri = Uri.parse("http://slum78.myddns.me/homestay2u/api/homestays");
       Map<String, String> params = {};
 
-      // Build API Parameters
       if (keyword.isNotEmpty) {
         params['search'] = keyword;
       } else {
